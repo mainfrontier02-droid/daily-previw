@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ari Daily Spin</title>
+<style>
+*{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;box-sizing:border-box}
+html,body{margin:0;padding:0;min-height:100%}
+body{
+  background:#05030a;
+  background-image:
+    radial-gradient(circle at 50% 0%,rgba(168,85,247,.25) 0%,transparent 45%),
+    radial-gradient(circle at 100% 100%,rgba(34,211,238,.1) 0%,transparent 50%);
+  font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  color:#f5f3ff;touch-action:manipulation;padding:16px;
+}
+.box{width:100%;max-width:620px;margin:auto}
+
+/* machine */
+.machine{
+  border-radius:26px;padding:3px;
+  background:linear-gradient(160deg,#c9a227 0%,#6b4400 50%,#c9a227 100%);
+  box-shadow:0 20px 60px rgba(0,0,0,.75);
+}
+.machine-inner{
+  border-radius:24px;padding:20px;
+  background:linear-gradient(180deg,#1a0f33 0%,#0a0518 100%);
+}
+.header{text-align:center;padding:4px 0 18px}
+.eyebrow{font-size:10px;letter-spacing:5px;font-weight:800;color:rgba(255,215,0,.8);text-transform:uppercase}
+.title{
+  font-size:28px;font-weight:900;letter-spacing:1px;margin-top:6px;text-transform:uppercase;
+  background:linear-gradient(180deg,#fff8b8,#ffd700 50%,#b8860b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.sub{font-size:10px;letter-spacing:3px;color:rgba(245,243,255,.5);margin-top:4px;text-transform:uppercase}
+
+/* cabinet */
+.cabinet{
+  position:relative;padding:14px;border-radius:20px;
+  background:#000;
+  border:1px solid rgba(255,215,0,.25);
+  box-shadow:0 0 40px rgba(0,0,0,.7) inset;
+}
+.payline{
+  position:absolute;left:14px;right:14px;top:50%;height:2px;
+  transform:translateY(-1px);
+  background:linear-gradient(90deg,transparent,#ffd700 20%,#ffd700 80%,transparent);
+  z-index:5;pointer-events:none;opacity:.35;transition:opacity .25s;
+}
+.payline.active{opacity:1}
+
+/* reels */
+.reels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.reel{
+  position:relative;height:250px;border-radius:12px;
+  background:#000;
+  border:1px solid rgba(255,215,0,.15);
+  overflow:hidden;
+}
+.reel::before,.reel::after{content:"";position:absolute;left:0;right:0;pointer-events:none;z-index:4}
+.reel::before{top:0;height:60px;background:linear-gradient(180deg,#000 0%,rgba(0,0,0,.75) 40%,transparent 100%)}
+.reel::after{bottom:0;height:60px;background:linear-gradient(0deg,#000 0%,rgba(0,0,0,.75) 40%,transparent 100%)}
+
+.strip{position:absolute;top:0;left:0;right:0;will-change:transform}
+.sym{height:125px;display:flex;align-items:center;justify-content:center;padding:18px}
+.sym svg{width:100%;height:100%}
+.sym.win svg{animation:symWin .6s ease-out}
+@keyframes symWin{50%{transform:scale(1.15)}}
+
+/* spin button */
+.spin-wrap{padding:20px 0 4px;display:flex;justify-content:center}
+.spin-btn{
+  width:200px;height:60px;border-radius:16px;border:none;
+  background:linear-gradient(180deg,#ffe97a,#ffd700 30%,#b8860b 70%,#6b4400);
+  color:#1a0d00;font-size:16px;font-weight:900;letter-spacing:5px;
+  cursor:pointer;font-family:inherit;text-transform:uppercase;
+  box-shadow:0 8px 20px rgba(255,215,0,.45),inset 0 1px 0 rgba(255,255,255,.5);
+  transition:transform .1s;
+}
+.spin-btn:active{transform:scale(.97)}
+.spin-btn:disabled{
+  background:linear-gradient(180deg,#3a3a3a,#1a1a1a);
+  color:#777;box-shadow:none;cursor:not-allowed;
+}
+
+/* status */
+.status{padding:14px 0 2px;display:flex;justify-content:center}
+.status-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 16px;border-radius:99px;
+  background:rgba(0,0,0,.6);
+  border:1px solid rgba(168,85,247,.35);
+  font-size:10px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;
+  color:rgba(245,243,255,.7);
+}
+.status-pill .dot{width:7px;height:7px;border-radius:50%;background:#a855f7}
+.status-pill.ready{border-color:rgba(255,215,0,.6);color:#ffd700}
+.status-pill.ready .dot{background:#ffd700}
+.status-pill.spinning{border-color:rgba(168,85,247,.75);color:#c4b5fd}
+.status-pill.spinning .dot{background:#c4b5fd}
+.status-pill.won{border-color:rgba(34,197,94,.8);color:#22c55e}
+.status-pill.won .dot{background:#22c55e}
+.status-pill.lost{border-color:rgba(239,68,68,.7);color:#ef4444}
+.status-pill.lost .dot{background:#ef4444}
+
+/* overlay */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.92);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;z-index:100;
+}
+.overlay.hidden{display:none}
+.ov-card{
+  background:linear-gradient(160deg,#2a1550,#0a0518);
+  border:2px solid rgba(255,215,0,.55);
+  border-radius:22px;padding:28px 22px;
+  max-width:380px;width:100%;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.9);
+}
+.ov-title{font-size:22px;font-weight:900;letter-spacing:5px;margin-bottom:6px;text-transform:uppercase}
+.ov-title.win{color:#ffd700}
+.ov-title.lose{color:#ef4444}
+.ov-sub{font-size:10px;letter-spacing:3px;color:rgba(245,243,255,.5);font-weight:700;margin-bottom:20px;text-transform:uppercase}
+.ov-reward{font-size:46px;font-weight:900;margin:6px 0 22px;font-variant-numeric:tabular-nums}
+.ov-reward.positive{
+  background:linear-gradient(180deg,#fff8b8,#ffd700 60%,#b8860b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.ov-reward.zero{color:#6b7280;font-size:28px}
+.ov-label{font-size:9px;letter-spacing:4px;color:rgba(34,211,238,.9);font-weight:800;margin-bottom:10px;text-transform:uppercase}
+.ov-cmd{
+  background:rgba(0,0,0,.75);
+  border:2px solid rgba(34,211,238,.55);
+  border-radius:14px;padding:16px 12px;
+  font-family:'Courier New',monospace;
+  font-size:17px;font-weight:900;color:#22d3ee;letter-spacing:3px;
+  user-select:all;-webkit-user-select:all;
+  margin-bottom:10px;word-break:break-all;
+}
+.ov-ttl{font-size:11px;color:rgba(245,243,255,.6);margin-bottom:18px;font-weight:700}
+.ov-ttl b{color:#ffd700;font-size:14px}
+.ov-btn{
+  width:100%;background:linear-gradient(180deg,#ffe97a,#ffd700 30%,#b8860b);
+  border:none;border-radius:14px;padding:15px;
+  color:#1a0d00;font-size:13px;font-weight:900;
+  cursor:pointer;font-family:inherit;letter-spacing:3px;text-transform:uppercase;
+}
+.ov-btn:active{transform:scale(.97)}
+.ov-btn.copied{background:linear-gradient(180deg,#5cff9d,#22c55e);color:#fff}
+.ov-btn:disabled{background:#333;color:#666}
+.ov-hint{font-size:10px;color:rgba(245,243,255,.45);margin-top:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="machine">
+    <div class="machine-inner">
+
+      <div class="header">
+        <div class="eyebrow">Ari Arcade</div>
+        <div class="title">Daily Spin</div>
+        <div class="sub">Fortune favors the bold</div>
+      </div>
+
+      <div class="cabinet">
+        <div class="payline" id="payline"></div>
+        <div class="reels">
+          <div class="reel"><div class="strip" id="s0"></div></div>
+          <div class="reel"><div class="strip" id="s1"></div></div>
+          <div class="reel"><div class="strip" id="s2"></div></div>
+        </div>
+      </div>
+
+      <div class="spin-wrap">
+        <button class="spin-btn" id="spinBtn">Spin</button>
+      </div>
+
+      <div class="status">
+        <div class="status-pill ready" id="status"><span class="dot"></span><span id="statusText">Ready</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="overlay" class="overlay hidden">
+  <div class="ov-card">
+    <div class="ov-title" id="ovTitle">Result</div>
+    <div class="ov-sub" id="ovSub">Ari Daily</div>
+    <div class="ov-reward" id="ovReward">+0</div>
+    <div class="ov-label">Copy This Command</div>
+    <div class="ov-cmd" id="ovCmd">.claim ------</div>
+    <div class="ov-ttl">Expires in <b id="ovTtl">0</b>s</div>
+    <button class="ov-btn" id="ovCopy">Copy Command</button>
+    <div class="ov-hint">Paste it in chat and send. Coins go straight to your wallet.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var SECRET = "ari-daily-2026-xitexe-frontier";
+var BUCKET_MS = 30000;
+
+var SYM = {
+  seven:   '<svg viewBox="0 0 100 100"><defs><linearGradient id="g7" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff8b8"/><stop offset=".5" stop-color="#ffd700"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs><text x="50" y="80" text-anchor="middle" font-size="92" font-weight="900" font-family="Arial Black,Arial" fill="url(#g7)" stroke="#5a3a00" stroke-width="2.5">7</text></svg>',
+  diamond: '<svg viewBox="0 0 100 100"><defs><linearGradient id="gd" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#e0fbff"/><stop offset=".5" stop-color="#22d3ee"/><stop offset="1" stop-color="#0369a1"/></linearGradient></defs><polygon points="50,6 94,50 50,94 6,50" fill="url(#gd)" stroke="#fff" stroke-width="2.5"/><polygon points="50,20 78,50 50,80 22,50" fill="#fff" opacity=".2"/></svg>',
+  star:    '<svg viewBox="0 0 100 100"><defs><linearGradient id="gs" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fef3ff"/><stop offset=".5" stop-color="#c084fc"/><stop offset="1" stop-color="#6b21a8"/></linearGradient></defs><polygon points="50,4 62,38 98,38 69,60 80,96 50,74 20,96 31,60 2,38 38,38" fill="url(#gs)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>',
+  bell:    '<svg viewBox="0 0 100 100"><defs><linearGradient id="gb" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fef9c3"/><stop offset=".5" stop-color="#facc15"/><stop offset="1" stop-color="#a16207"/></linearGradient></defs><path d="M50 6 Q26 6 26 42 L16 72 L84 72 L74 42 Q74 6 50 6 Z" fill="url(#gb)" stroke="#7a4f00" stroke-width="2.5" stroke-linejoin="round"/><circle cx="50" cy="84" r="7" fill="url(#gb)" stroke="#7a4f00" stroke-width="2"/></svg>',
+  clover:  '<svg viewBox="0 0 100 100"><defs><radialGradient id="gc" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#86efac"/><stop offset="1" stop-color="#15803d"/></radialGradient></defs><g stroke="#052e16" stroke-width="2"><circle cx="34" cy="34" r="20" fill="url(#gc)"/><circle cx="66" cy="34" r="20" fill="url(#gc)"/><circle cx="34" cy="66" r="20" fill="url(#gc)"/><circle cx="66" cy="66" r="20" fill="url(#gc)"/><rect x="47" y="46" width="6" height="48" fill="#166534"/></g></svg>'
+};
+
+var KEYS = ["seven","diamond","star","bell","clover"];
+var SYM_H = 125;
+
+function rotCode(reward){
+  var bucket = Math.floor(Date.now() / BUCKET_MS);
+  var str = SECRET + ":" + bucket + ":" + reward;
+  var h = 0x811c9dc5 >>> 0;
+  for (var i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h * 0x01000193) >>> 0;
+  }
+  return String(h % 1000000).padStart(6, "0");
+}
+function pickSymbol(){
+  var r = Math.random();
+  if (r < 0.05) return "seven";
+  if (r < 0.15) return "diamond";
+  if (r < 0.30) return "star";
+  if (r < 0.55) return "bell";
+  return "clover";
+}
+function computePrize(s){
+  if (s[0] === s[1] && s[1] === s[2]) {
+    return {seven:1000, diamond:500, star:250, bell:150, clover:100}[s[0]];
+  }
+  if (s[0] === s[1] || s[1] === s[2] || s[0] === s[2]) return 50;
+  return 0;
+}
+function symHTML(k){ return '<div class="sym">' + SYM[k] + '</div>'; }
+
+/* Build a strip: [pre-roll randoms] [target] [post] 
+   Then translate so target lands centered. */
+function fillIdleStrip(el){
+  var html = "";
+  for (var i = 0; i < 4; i++) {
+    html += symHTML(KEYS[Math.floor(Math.random() * KEYS.length)]);
+  }
+  el.innerHTML = html;
+  // center the 2nd symbol
+  el.style.transform = "translateY(" + (-SYM_H) + "px)";
+}
+
+function spinReel(el, target, durationMs, onDone){
+  var pre = 16;
+  var html = "";
+  for (var i = 0; i < pre; i++) {
+    html += symHTML(KEYS[Math.floor(Math.random() * KEYS.length)]);
+  }
+  html += symHTML(target);
+  html += symHTML(KEYS[Math.floor(Math.random() * KEYS.length)]);
+  el.innerHTML = html;
+
+  // Reel viewport is 250px. Symbol is 125. To center target:
+  // Target is at index `pre` (0-based). Its top = pre * 125.
+  // Center of viewport = 125px from top.
+  // We want target's vertical center (target_top + 62.5) = viewport center + top offset
+  // Simplest: translateY = 62.5 - (pre * 125) puts target center at 62.5px of the strip
+  // Then the visible window (which centers on 125px) will show it correctly if we shift by (125 - 62.5) = 62.5
+
+  // Actually let's just do: we want target's top to sit at (viewportHeight/2 - symbolHeight/2) = 125/2 = 62.5
+  // So translateY = 62.5 - (pre * SYM_H)
+  var finalY = 62.5 - (pre * SYM_H);
+
+  el.style.transition = "none";
+  el.style.transform = "translateY(0)";
+  el.offsetHeight;
+
+  el.style.transition = "transform " + durationMs + "ms cubic-bezier(.18,.55,.25,1)";
+  el.style.transform = "translateY(" + finalY + "px)";
+
+  setTimeout(function(){
+    if (onDone) onDone();
+  }, durationMs + 40);
+}
+
+var s0 = document.getElementById("s0");
+var s1 = document.getElementById("s1");
+var s2 = document.getElementById("s2");
+var spinBtn = document.getElementById("spinBtn");
+var statusEl = document.getElementById("status");
+var statusText = document.getElementById("statusText");
+var overlay = document.getElementById("overlay");
+var ovTitle = document.getElementById("ovTitle");
+var ovSub = document.getElementById("ovSub");
+var ovReward = document.getElementById("ovReward");
+var ovCmd = document.getElementById("ovCmd");
+var ovTtl = document.getElementById("ovTtl");
+var ovCopy = document.getElementById("ovCopy");
+var payline = document.getElementById("payline");
+
+var spinning = false, done = false;
+var frozenCode = null, frozenAt = 0;
+
+fillIdleStrip(s0);
+fillIdleStrip(s1);
+fillIdleStrip(s2);
+
+function setStatus(text, cls){
+  statusText.textContent = text;
+  statusEl.className = "status-pill " + (cls || "");
+}
+
+spinBtn.addEventListener("click", function(){
+  if (spinning || done) return;
+  spinning = true;
+  spinBtn.disabled = true;
+  spinBtn.textContent = "Spinning";
+  setStatus("Spinning", "spinning");
+  payline.classList.remove("active");
+
+  var result = [pickSymbol(), pickSymbol(), pickSymbol()];
+  var durs = [1800, 2200, 2600];
+  var doneCount = 0;
+
+  function onDone(){
+    doneCount++;
+    if (doneCount === 3) finish();
+  }
+
+  spinReel(s0, result[0], durs[0], onDone);
+  spinReel(s1, result[1], durs[1], onDone);
+  spinReel(s2, result[2], durs[2], onDone);
+
+  function finish(){
+    var prize = computePrize(result);
+    frozenCode = rotCode(prize);
+    frozenAt = Date.now();
+
+    done = true;
+    spinning = false;
+    spinBtn.textContent = "Spin Used";
+
+    if (prize > 0) {
+      setStatus("Winner", "won");
+      payline.classList.add("active");
+      // highlight landing symbols
+      [s0, s1, s2].forEach(function(strip){
+        var syms = strip.querySelectorAll(".sym");
+        if (syms.length >= 2) syms[syms.length - 2].classList.add("win");
+      });
+    } else {
+      setStatus("No win", "lost");
+    }
+
+    ovTitle.textContent = prize > 0 ? "You Won" : "No Luck";
+    ovTitle.className = "ov-title " + (prize > 0 ? "win" : "lose");
+    ovReward.textContent = prize > 0 ? ("+" + prize) : "NOTHING";
+    ovReward.className = "ov-reward " + (prize > 0 ? "positive" : "zero");
+    ovCmd.textContent = ".claim " + frozenCode;
+
+    setTimeout(function(){
+      overlay.classList.remove("hidden");
+    }, 500);
+
+    var bucketStart = Math.floor(frozenAt / BUCKET_MS) * BUCKET_MS;
+    var validUntil = bucketStart + BUCKET_MS * 3;
+    (function tick(){
+      var left = Math.max(0, Math.floor((validUntil - Date.now()) / 1000));
+      ovTtl.textContent = left;
+      if (left <= 0) {
+        ovTtl.textContent = "0";
+        ovCopy.disabled = true;
+        ovCopy.textContent = "Code Expired";
+        return;
+      }
+      setTimeout(tick, 500);
+    })();
+  }
+});
+
+ovCopy.addEventListener("click", function(){
+  if (!frozenCode) return;
+  var cmd = ".claim " + frozenCode;
+  var doneCb = function(){
+    ovCopy.classList.add("copied");
+    ovCopy.textContent = "Copied!";
+    setTimeout(function(){
+      ovCopy.classList.remove("copied");
+      ovCopy.textContent = "Copy Command";
+    }, 1600);
+  };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cmd).then(doneCb).catch(function(){
+        var ta = document.createElement("textarea");
+        ta.value = cmd; ta.style.position = "fixed"; ta.style.top = "-9999px";
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); } catch(e){}
+        document.body.removeChild(ta); doneCb();
+      });
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = cmd; ta.style.position = "fixed"; ta.style.top = "-9999px";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch(e){}
+      document.body.removeChild(ta); doneCb();
+    }
+  } catch(e){}
+});
+})();
+</script>
+</body>
+</html>
